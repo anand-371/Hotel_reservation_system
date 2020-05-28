@@ -31,7 +31,7 @@ if ($conn->query($sql) === TRUE)
 } 
 else 
 {
- echo "Error:" . $conn->error. "<br> <a href=\"http://localhost/railway/new_user_form.htm\">Go Back to Login!!!</a> ";
+ echo "Error:" . $conn->error. "<br> <a href=\"http://localhost/hotel_management/customer.html\">Go Back to Login!!!</a> ";
 }
 
 $conn->close(); 
