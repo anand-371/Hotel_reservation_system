@@ -44,7 +44,7 @@ CREATE TABLE Hotel_contact_number
   FOREIGN KEY (HotelID) REFERENCES Hotel(HotelID) ON DELETE CASCADE
 );
 CREATE TABLE Rooms
-( index_1 INT NOT NULL,
+( 
   RoomID INT NOT NULL,
   room_category VARCHAR(10) NOT NULL,
   number_of_beds INT NOT NULL,
@@ -61,7 +61,7 @@ CREATE TABLE Rooms
   FOREIGN KEY (reservationID) REFERENCES payment_details(reservationID) ON DELETE CASCADE
 );
 CREATE TABLE Bill
-( index_1 INT NOT NULL,
+( 
   BillID INT NOT NULL,
   Amount INT,
   lastname VARCHAR(10) ,
@@ -123,39 +123,21 @@ payment_status IN ('Failed','successful')
 );
 
 
-CREATE TRIGGER income_trigger ON Bill
-FOR INSERT AS
+CREATE TRIGGER income_trigger ON Bill AFTER INSERT AS
 BEGIN
-
-	DECLARE @temp INT;
 	DECLARE @bill_temp INT;
 	DECLARE @id INT;
-	SELECT 
-		@temp=COALESCE(max(Bill.index_1),0)
-	from Bill;
 	SELECT 
 		@id=inserted.CustomerID,
 		@bill_temp=inserted.BillID
 	from inserted;
-		
-		INSERT INTO 
-		AUDIT_DETAILS
-		(
-			BillID,
-			total_amount_paid,
-		start_date,
-		end_date
-		)
-		SELECT Bill.BillID, Bill.Amount, Rooms.start_date, Rooms.end_date
-		FROM Bill
-		INNER JOIN Rooms ON Bill.CustomerID=Rooms.CustomerID WHERE Bill.index_1=COALESCE(@temp,0);
-
 	DECLARE @sd date;
 	DECLARE @ed date;
 	DECLARE @current_price INT;
 	DECLARE @fname VARCHAR(10);
 	DECLARE @mname VARCHAR(10);
 	DECLARE @lname VARCHAR(10);
+	DECLARE @temp_amount INT;
 		SELECT @fname=Customer.firstname,
 			   @mname=Customer.middlename,
 			   @lname=Customer.lastname
@@ -163,12 +145,15 @@ BEGIN
 
 		SELECT @sd=Rooms.start_date,
 			   @ed=Rooms.end_date,
-			   @current_price=Rooms.current_price
+			   @current_price=Rooms.current_price,
+			   @temp_amount=DATEDIFF(DAY,@sd,@ed)*@current_price
 		FROM Rooms WHERE Rooms.CustomerID=@id;
-
 		UPDATE Bill
 			SET Amount=DATEDIFF(DAY,@sd,@ed)*@current_price, firstname = @fname,lastname= @lname,middlename= @mname
 			WHERE Bill.CustomerID=@id
+
+		INSERT INTO AUDIT_DETAILS(BillID,total_amount_paid,start_date,end_date)VALUES (@bill_temp,@temp_amount,@sd,@ed)
+
 		UPDATE AUDIT_DETAILS
 			SET number_of_days=DATEDIFF(DAY,@sd,@ed),total_amount_paid=DATEDIFF(DAY,@sd,@ed)*@current_price
 			WHERE AUDIT_DETAILS.BillID=@bill_temp
@@ -182,8 +167,8 @@ INSERT INTO Customer_contact_number VALUES('6362142068',8999);
 INSERT INTO Hotel VALUES (9999,'street2','560061','bangalore','ITC');
 INSERT INTO payment_details VALUES (69696,'Cash','successful');
 INSERT INTO Hotel_contact_number VALUES ('8262134545',9999);
-INSERT INTO Rooms VALUES (1,1093,'King',2,'2008-11-11','2008-11-15',5000,69696,110,8999,9999);
-INSERT INTO  Bill(index_1,BillID,HotelID,reservationID,CustomerID) VALUES (1,1111,9999,69696,8999);
+INSERT INTO Rooms VALUES (1093,'King',2,'2008-11-11','2008-11-15',5000,69696,110,8999,9999);
+INSERT INTO  Bill(BillID,HotelID,reservationID,CustomerID) VALUES (1111,9999,69696,8999);
 
 
 INSERT INTO Customer VALUES (8998,'John','G','K','abcd@gmail.com','bangalore','street3','560061',22,'India');
@@ -191,5 +176,30 @@ INSERT INTO Customer_contact_number VALUES('9740299869',8998);
 INSERT INTO Hotel VALUES (9998,'street1','560060','bangalore','Leela');
 INSERT INTO payment_details VALUES (69695,'Cash','successful');
 INSERT INTO  Hotel_contact_number VALUES ('8262134542',9998);
-INSERT INTO Rooms VALUES (2,1092,'king',1,'2009-12-11','2009-12-14',6500,69695,102,8998,9998);
-INSERT INTO  Bill(index_1,BillID,Amount,HotelID,reservationID,CustomerID) VALUES (2,1110,6500,9998,69695,8998);
+INSERT INTO Rooms VALUES (1092,'king',1,'2009-12-11','2009-12-14',6500,69695,102,8998,9998);
+INSERT INTO  Bill(BillID,Amount,HotelID,reservationID,CustomerID) VALUES (1110,6500,9998,69695,8998);
+
+INSERT INTO Customer VALUES (8997,'mack','K','M','bcde@gmail.com','bangalore','street3','560061',30,'India');
+INSERT INTO Customer_contact_number VALUES('9748299869',8997);
+INSERT INTO Hotel VALUES (9997,'street1','550043','chennai','Leela');
+INSERT INTO payment_details VALUES (69694,'Cash','successful');
+INSERT INTO  Hotel_contact_number VALUES ('8262004542',9997);
+INSERT INTO Rooms VALUES (1091,'king',2,'2010-09-01','2010-09-05',7500,69695,102,8997,9997);
+INSERT INTO  Bill(BillID,Amount,HotelID,reservationID,CustomerID) VALUES (1109,7500,9997,69694,8997);
+
+INSERT INTO Customer VALUES (8996,'Max','L','K','bcdfe@gmail.com','bangalore','street2','560161',25,'India');
+INSERT INTO Customer_contact_number VALUES('9782299869',8997);
+INSERT INTO Hotel VALUES (9996,'street4','560001','bangalore','ITC');
+INSERT INTO payment_details VALUES (69693,'Card','successful');
+INSERT INTO  Hotel_contact_number VALUES ('8262134545',9996);
+INSERT INTO Rooms VALUES (1094,'King',1,'2008-10-24','2008-10-26',8000,69693,110,8996,9996);
+INSERT INTO Bill(BillID,Amount,HotelID,reservationID,CustomerID) VALUES (1108,8000,9996,69693,8996);
+
+
+INSERT INTO Customer VALUES (8995,'Alex','K','T','sjufe@gmail.com','bangalore','street1','563461',60,'India');
+INSERT INTO Customer_contact_number VALUES('9088299869',8995);
+INSERT INTO Hotel VALUES (9995,'street3','563001','bangalore','Leela');
+INSERT INTO payment_details VALUES (69692,'Card','successful');
+INSERT INTO  Hotel_contact_number VALUES ('8362134545',9995);
+INSERT INTO Rooms VALUES (1095,'King',3,'2008-10-25','2008-10-29',12000,69692,201,8995,9995);
+INSERT INTO Bill(BillID,Amount,HotelID,reservationID,CustomerID) VALUES (1107,12000,9995,69692,8995);
